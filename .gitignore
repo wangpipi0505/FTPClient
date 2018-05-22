@@ -1,0 +1,7 @@
+*.sdf
+*.log
+*.ipch
+*.exe
+ipch
+*.vsp
+
