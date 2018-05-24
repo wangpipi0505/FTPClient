@@ -1,5 +1,5 @@
 
-// FTPClientDlg.cpp : ??????
+// FTPClientDlg.cpp : ????
 //
 
 #include "stdafx.h"
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "io.h"
 #include "direct.h"
+#include "SettingServer.h"
 #include <string.h>
 #include<atlconv.h>
 
@@ -20,17 +21,17 @@
 #endif
 using namespace std;
 
-//char *user_local;//?????
-//char *pass_local;//????
-//char *host_local;//???
-extern int time_up,time_down;//?????????????
-extern CString TmpUploadFolderPath;//???????????¡¤??????
-extern CString TmpDownloadFolderPath;//???????
-extern CString DownloadFolderPath;//????????????¡¤??
-extern CString up_hour,up_minute,up_second;//??????????
-extern CString down_hour,down_minute,down_second;//??????????
+//char *user_local;//???
+//char *pass_local;//??
+//char *host_local;//??
+extern int time_up,time_down;//????????
+extern CString TmpUploadFolderPath;//???????????
+extern CString TmpDownloadFolderPath;//????
+extern CString DownloadFolderPath;//?????????
+extern CString up_hour,up_minute,up_second;//??????
+extern CString down_hour,down_minute,down_second;//??????
 
-int flag;		//??????????????0????§µ?1??????2?????
+int flag;		//????????,0???,1???,2???
 
 vec_upload vUpload;
 up_info uploadfile_info;
@@ -40,20 +41,20 @@ download_info downloadfile_info;
 
 vec_auto_upload vAutoUpload;
 auto_up autoUpload_info;
-// ??????¨®????????????? CAboutDlg ?????
+// ??????“??”???? CAboutDlg ???
 
 class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg();
 
-	// ?????????
+	// ?????
 	enum { IDD = IDD_ABOUTBOX };
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV ???
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV ??
 
-	// ???
+	// ??
 protected:
 	DECLARE_MESSAGE_MAP()
 public:
@@ -76,22 +77,14 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 	//	ON_COMMAND(ID_32786, &CAboutDlg::On32786)
 	//ON_WM_TIMER()
 END_MESSAGE_MAP()
-
-
-
-
-// CFTPClientDlg ?????
-
-
-
+// CFTPClientDlg ???
 CFTPClientDlg::CFTPClientDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CFTPClientDlg::IDD, pParent)
 {
 	//m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);
-	flag = 0;		//??§ß??????????????
+	flag = 0;		//???????????
 	m_pCurl = CCurl::Instance();
-
 }
 
 void CFTPClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -134,23 +127,25 @@ BEGIN_MESSAGE_MAP(CFTPClientDlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_COMMAND(ID_32786, &CFTPClientDlg::OnDownload)
 	ON_MESSAGE(WM_SHOWTASK,&CFTPClientDlg::OnShowTask)
+	ON_COMMAND(ID_SettingServer, &CFTPClientDlg::OnSettingserver)
+	ON_COMMAND(ID_LOGOUT, &CFTPClientDlg::OnLogout)
 END_MESSAGE_MAP()
 
 
 
 CFTPClientDlg::~CFTPClientDlg()
 {
-	CoUninitialize(); // ????????
+	CoUninitialize(); // ?????
 }
-// CFTPClientDlg ??????????
+// CFTPClientDlg ??????
 
 BOOL CFTPClientDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	CoInitialize(NULL); // ???????
-	// ????????...?????????????????§³?
+	CoInitialize(NULL); // ?????
+	// ?“??...”????????????
 
-	// IDM_ABOUTBOX ????????????¦¶???
+	// IDM_ABOUTBOX ???????????
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -168,28 +163,29 @@ BOOL CFTPClientDlg::OnInitDialog()
 		}
 	}
 
-	// ?????????????????¨®??????????????????????????
-	//  ??§Õ????
-	SetIcon(m_hIcon, TRUE);			// ????????
-	SetIcon(m_hIcon, FALSE);		// ????§³???
+	// ????????????????????????,?????
+	//  ?????
+	SetIcon(m_hIcon, TRUE);			// ?????
+	SetIcon(m_hIcon, FALSE);		// ?????
 
-	// TODO: ??????????????????
+	// TODO: ????????????
 	CRect temprect(0,0,905,765);
 	CWnd::SetWindowPos(NULL,0,0,temprect.Width(),temprect.Height(),SWP_NOZORDER|SWP_NOMOVE);
-	m_ImageList.Create(32,32,ILC_COLOR32,10,30);     //???????????CImageList????   
-	m_list_local.SetImageList(&m_ImageList,LVSIL_NORMAL);  //????¦Ï?????????????     
+	m_ImageList.Create(32,32,ILC_COLOR32,10,30);     //??????CImageList??   
+	m_list_local.SetImageList(&m_ImageList,LVSIL_NORMAL);  //???????????     
 	m_tree_local.ModifyStyle(NULL,TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_EDITLABELS);  
-	m_hRoot = m_tree_local.InsertItem(_T("??????"));         //????????  
-	GetLogicalDrives(m_hRoot);                      //????Žï?? ???????  
-	GetDriveDir(m_hRoot);                           //????Žï?? ???????????  
-	m_tree_local.Expand(m_hRoot,TVE_EXPAND);              //?????????????§Ò? TVE_EXPAND????§Ò?  
-	initLocalList();//?????????????§Ò?
-	initServerList();//???????????????§Ò?
+	m_hRoot = m_tree_local.InsertItem(_T("????"));         //?????  
+	GetLogicalDrives(m_hRoot);                      //????? ????  
+	GetDriveDir(m_hRoot);                           //????? ??????  
+	m_tree_local.Expand(m_hRoot,TVE_EXPAND);              //????????? TVE_EXPAND????  
+	initLocalList();//?????????
+	initServerList();//??????????
 
 	HANDLE Thread_Upload_File; 
 	HANDLE Thread_Download_File;
-	Thread_Upload_File = CreateThread(NULL,0,Thread_UploadFile,this,0,NULL );//??????
-	Thread_Download_File = CreateThread(NULL,0,Thread_DownloadFile,this,0,NULL);//???????
+	Thread_Upload_File = CreateThread(NULL,0,Thread_UploadFile,this,0,NULL );//????
+	Thread_Download_File = CreateThread(NULL,0,Thread_DownloadFile,this,0,NULL);//????
+	SetTimer(10,1000,NULL);		//test ,??autodownload and autoupload
 
 	//set default upload/download dir
 	TmpUploadFolderPath = _T("D:\\RadarTaskFile");
@@ -210,47 +206,110 @@ BOOL CFTPClientDlg::OnInitDialog()
 			int err = GetLastError();
 		}
 	}
-	//host="localhost";
-	host="25.95.234.232";
-	user="11";
-	pass="11";
-	port="2121";
-
-	m_edit_user.SetWindowText(_T("11"));
-	m_edit_pass.SetWindowText(_T("11"));
-	m_edit_port.SetWindowText(_T("2121"));
-	m_edit_host.SetWindowText(_T("25.95.234.232"));
-	m_pCurl->setHostUserPwd("11","11","25.95.234.232",2121);
-
-	ConnectFtp(_T("25.95.234.232"),_T("11"),_T("11"),_T("2121"));
+	
+	
 
 	//m_pCurl->setHostUserPwd("11","11","localhost",2121);
 	//ConnectFtp(_T("localhost"),_T("11"),_T("11"),_T("2121"));
+	FILE *setFile;
+	setFile = fopen("settingServer.txt","r");
+	char server_ip[20]="\0";
+	char server_name[20]="";
+	char server_passwd[20]="";
+	char server_port[20]="";
+	CString serverIp,serverName,serverPasswd;
+	if (setFile)//??????,???????,???????????
+	{
+		while(!feof(setFile))
+		{
+			//fseek(setFile,0,SEEK_SET);
+			fgets(server_ip,20,setFile);
+			fgets(server_name,15,setFile);
+			fgets(server_passwd,15,setFile);
+			fgets(server_port,15,setFile);
+		}
+		deleteEnter(server_ip);
+		deleteEnter(server_name);
+		deleteEnter(server_passwd);
 
+		serverIp.Format(L"%S",server_ip);
+		serverName.Format(L"%S",server_name);
+		serverPasswd.Format(L"%S",server_passwd);
+
+		m_edit_user.SetWindowText(serverName);
+		m_edit_pass.SetWindowText(serverPasswd);
+		m_edit_port.SetWindowText(_T("2121"));
+		m_edit_host.SetWindowText(serverIp);
+		m_pCurl->setHostUserPwd(server_name,server_passwd,server_ip,2121);
+		ConnectFtp(serverIp,serverName,serverPasswd,_T("2121"));
+		fclose(setFile);
+
+	}
+	else//????,?????
+	{
+		//host="localhost";
+		//host="25.95.234.232";
+		//host="192.168.0.204";
+		//host = "21.125.125.1";
+		host = "192.168.1.222";
+		user="yyxc";
+		pass="123456";
+		port="2121";
+
+		m_edit_user.SetWindowText(_T("yyxc"));
+		m_edit_pass.SetWindowText(_T("123456"));
+		m_edit_port.SetWindowText(_T("2121"));
+		m_edit_host.SetWindowText(_T("192.168.1.222"));
+		//m_edit_host.SetWindowText(_T("25.95.234.232"));
+		//m_edit_host.SetWindowText(_T("localhost"));
+		
+		//m_pCurl->setHostUserPwd("11","11","25.95.234.232",2121);
+		m_pCurl->setHostUserPwd("yyxc","123456","192.168.1.222",2121);
+		//ConnectFtp(_T("25.95.234.232"),_T("11"),_T("11"),_T("2121"));
+		ConnectFtp(_T("192.168.1.222"),_T("yyxc"),_T("123456"),_T("2121"));
+
+	}
+	
+	
 	if(bconnect)
 	{
-		m_list_log.InsertString(0,_T("??????"));
-		m_serverRoot=m_tree_server.InsertItem(_T("??????"));
+		m_list_log.InsertString(0,_T("????"));
+		m_serverRoot=m_tree_server.InsertItem(_T("???"));
 		/*m_tree_server.ModifyStyle(NULL,TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_EDITLABELS);  */
 		UpdateDir(m_serverRoot);
 		GetFTPDriveDir(m_serverRoot);
 	}
 
-	SetTimer(10,1000,NULL);		//test ??????autodownload and autoupload
-
-	return TRUE;  // ???????????????????????? TRUE
+	//SetTimer(10,1000,NULL);		//test ,??autodownload and autoupload
+	return TRUE;  // ??????????,???? TRUE
 }
-
+void CFTPClientDlg::deleteEnter(char* buf)
+{
+	char* p;
+	if((p = strchr(buf,'\n'))!= NULL)
+	{
+		*p='\0';
+	}
+}
 void CFTPClientDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	//if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	//{
+	//	CAboutDlg dlgAbout;
+	//	dlgAbout.DoModal();
+	//}
+	//else
+	//{
+	//	CDialogEx::OnSysCommand(nID, lParam);
+	//}
+	switch (nID)
 	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
+	case SC_CLOSE :
+		ShowWindow(SW_MINIMIZE);
+		return;
+	default:
 		CDialogEx::OnSysCommand(nID, lParam);
+		break;
 	}
 }
 void CFTPClientDlg::OnSize(UINT nType, int cx, int cy)
@@ -259,23 +318,24 @@ void CFTPClientDlg::OnSize(UINT nType, int cx, int cy)
 
 	if(nType == SIZE_MINIMIZED)
 	{
-		/*??§³????????*/
+		/*??????*/
 		m_nid.cbSize = (DWORD)sizeof(NOTIFYICONDATA);
 		m_nid.hWnd = this->m_hWnd;
 		m_nid.uID = IDI_ICON1;
 		m_nid.uFlags = NIF_ICON|NIF_MESSAGE|NIF_TIP;
 		m_nid.uCallbackMessage = WM_SHOWTASK;
 		m_nid.hIcon = LoadIcon(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON1));
-		wcscpy(m_nid.szTip, L"FTP?????");
-		Shell_NotifyIcon(NIM_ADD,&m_nid);// ??????????????
-		ShowWindow(SW_HIDE);//??????§³???????????????
+		wcscpy(m_nid.szTip, L"FTP???");
+		Shell_NotifyIcon(NIM_ADD,&m_nid);// ????????
+		ShowWindow(SW_HIDE);//????????????
 	}
-	// TODO: ????????????????????
+	// TODO: ?????????????
 	int m_interval = (int)(cx*0.005);
 	//CONNECT INPUT AREA
 	CWnd* pWnd=GetDlgItem(IDC_STATIC_CONNECT);
 	if(pWnd->GetSafeHwnd())   
 		pWnd->MoveWindow(0.01*cx,0.01*cy,(int)(cx*0.98),cy*0.09);
+
 	pWnd=GetDlgItem(IDC_STATIC_HOST);
 	if(pWnd->GetSafeHwnd())   
 		pWnd->MoveWindow(0.03*cx,0.045*cy,(int)(cx*0.07),cy*0.04);
@@ -329,7 +389,6 @@ void CFTPClientDlg::OnSize(UINT nType, int cx, int cy)
 	if(pWnd->GetSafeHwnd())   
 		pWnd->MoveWindow(0.02*cx,0.2*cy,(int)(cx*0.46),cy*0.25);
 
-
 	////SERVER FILE PATH
 
 	pWnd=GetDlgItem(IDC_STATIC_SERVERPATH);
@@ -365,27 +424,26 @@ void CFTPClientDlg::OnSize(UINT nType, int cx, int cy)
 
 }
 
-// ??????????????§³????????????????????
-//  ????????????????????/??????? MFC ??¨®???
-//  ???????????¨À?
+// ?????????????,????????
+//  ?????????????/????? MFC ????,
+//  ??????????
 
 void CFTPClientDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // ?????????õô??????
+		CPaintDC dc(this); // ??????????
 
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
-		// ????????????????§à???
+		// ????????????
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
-		// ???????
+		// ????
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
@@ -394,8 +452,8 @@ void CFTPClientDlg::OnPaint()
 	}
 }
 
-//??????????§³???????????????????¨´??
-//?????
+//??????????????????????
+//???
 HCURSOR CFTPClientDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
@@ -403,18 +461,18 @@ HCURSOR CFTPClientDlg::OnQueryDragIcon()
 
 void CFTPClientDlg::GetLogicalDrives(HTREEITEM hParent)
 {
-	//???????????????????????  
-	//size_t szAllDriveStrings = GetLogicalDriveStrings(0,NULL);           //???????????  
-	//char *pDriveStrings = new char[szAllDriveStrings + sizeof(_T(""))];  //????????  
+	//??????????????  
+	//size_t szAllDriveStrings = GetLogicalDriveStrings(0,NULL);           //??????  
+	//char *pDriveStrings = new char[szAllDriveStrings + sizeof(_T(""))];  //????  
 
 	//GetLogicalDriveStrings(szAllDriveStrings,(LPWSTR)pDriveStrings);
 
 	////GetLogicalDriveStrings(szAllDriveStrings,);
-	//size_t szDriveString = strlen(pDriveStrings);                        //??????§³  
+	//size_t szDriveString = strlen(pDriveStrings);                        //????  
 	//while(szDriveString > 0)  
 	//{   
-	//	m_tree_local.InsertItem((LPWSTR)pDriveStrings,hParent);       //??????hParent????????  
-	//	//pDriveStrings += szDriveString + 1;             //pDriveStrings??C:\ D:\ E:\??  
+	//	m_tree_local.InsertItem((LPWSTR)pDriveStrings,hParent);       //????hParent?????  
+	//	//pDriveStrings += szDriveString + 1;             //pDriveStrings?C:\ D:\ E:\?  
 	//	pDriveStrings += szDriveString+1;
 	//	szDriveString = strlen(pDriveStrings);  
 	//} 
@@ -430,51 +488,49 @@ void CFTPClientDlg::GetLogicalDrives(HTREEITEM hParent)
 
 		while(*p)  
 		{   
-			m_tree_local.InsertItem(p,hParent);       //??????hParent????????  
-			//wszResult += wszResult + 1;             //pDriveStrings??C:\ D:\ E:\??  
+			m_tree_local.InsertItem(p,hParent);       //????hParent?????  
+			//wszResult += wszResult + 1;             //pDriveStrings?C:\ D:\ E:\?  
 			//szDriveString = strlen(pDriveStrings);  
-
 			while(*p++)
 				;
-
 			//szDriveString = strlen(CStr); 
 		} 
 	}
 }
 void CFTPClientDlg::GetDriveDir(HTREEITEM hParent)
 {
-	HTREEITEM hChild = m_tree_local.GetChildItem(hParent);   //??????¦Ë???§Ö?????  
+	HTREEITEM hChild = m_tree_local.GetChildItem(hParent);   //??????????  
 	while(hChild)                                        
 	{  
-		CString strText = m_tree_local.GetItemText(hChild);  //?????§Ò??????????  
-		if(strText.Right(1) != '\\')                   //?????1??????????????nCount?????  
+		CString strText = m_tree_local.GetItemText(hChild);  //?????????  
+		if(strText.Right(1) != '\\')                   //???1????????nCount???  
 			strText += _T('\\');  
 		strText += "*.*";  
-		//????????????????InsertItem??????  
-		CFileFind file;                                       //???Œæ?????????  
-		BOOL bContinue = file.FindFile(strText);              //?????????????????  
+		//???????????InsertItem????  
+		CFileFind file;                                       //????????  
+		BOOL bContinue = file.FindFile(strText);              //??????????  
 		while(bContinue)  
 		{  
-			bContinue = file.FindNextFile();                  //????????????  
-			if(file.IsDirectory() && !file.IsDots())          //?????????????????"."  
-				m_tree_local.InsertItem(file.GetFileName(),hChild); //??????¡¤????????????  
+			bContinue = file.FindNextFile();                  //???????  
+			if(file.IsDirectory() && !file.IsDots())          //???????????"."  
+				m_tree_local.InsertItem(file.GetFileName(),hChild); //????????????  
 		}  
-		GetDriveDir(hChild);                                  //??????  
-		hChild = m_tree_local.GetNextItem(hChild,TVGN_NEXT);        //??????¦Ï??TVGN_NEXT???????  
+		GetDriveDir(hChild);                                  //????  
+		hChild = m_tree_local.GetNextItem(hChild,TVGN_NEXT);        //??????TVGN_NEXT????  
 	}  
 }
 
 void CFTPClientDlg::AddSubDir(HTREEITEM hParent)
 {
-	CString strPath = GetFullPath(hParent);     //????¡¤??  
+	CString strPath = GetFullPath(hParent);     //?????  
 	if(strPath.Right(1) != '\\')  
 		strPath += '\\';  
 	strPath += "*.*";  
 	CFileFind file;  
-	BOOL bContinue = file.FindFile(strPath);    //?????????????????  
+	BOOL bContinue = file.FindFile(strPath);    //??????????  
 	while(bContinue)  
 	{  
-		bContinue = file.FindNextFile();        //????????????  
+		bContinue = file.FindNextFile();        //???????  
 		if(file.IsDirectory() && !file.IsDots())  
 			m_tree_local.InsertItem(file.GetFileName(),hParent);  
 	}  
@@ -485,11 +541,11 @@ CString CFTPClientDlg::GetFullPath(HTREEITEM hCurrent)
 	CString strReturn = L"";  
 	while(hCurrent != m_hRoot)  
 	{  
-		strTemp = m_tree_local.GetItemText(hCurrent);    //?????§Ò??????????  
+		strTemp = m_tree_local.GetItemText(hCurrent);    //?????????  
 		if(strTemp.Right(1) != '\\')  
 			strTemp += '\\';  
 		strReturn = strTemp  + strReturn;          
-		hCurrent = m_tree_local.GetParentItem(hCurrent); //???????????  
+		hCurrent = m_tree_local.GetParentItem(hCurrent); //???????  
 	}  
 	return strReturn;  
 }
@@ -497,24 +553,23 @@ CString CFTPClientDlg::GetFullPath(HTREEITEM hCurrent)
 void CFTPClientDlg::OnTvnItemexpandedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
-	// TODO: ????????????????????
-	TVITEM item = pNMTreeView->itemNew;                  //????\????????????????????  
+	// TODO: ??????????????
+	TVITEM item = pNMTreeView->itemNew;                  //??\????????????  
 	if(item.hItem == m_hRoot)  
 		return;  
-	HTREEITEM hChild = m_tree_local.GetChildItem(item.hItem);  //??????¦Ë???§Ö?????  
+	HTREEITEM hChild = m_tree_local.GetChildItem(item.hItem);  //??????????  
 	while(hChild)  
 	{  
-		AddSubDir(hChild);                               //???????  
-		hChild = m_tree_local.GetNextItem(hChild,TVGN_NEXT);   //??????¦Ï??TVGN_NEXT???????  
+		AddSubDir(hChild);                               //?????  
+		hChild = m_tree_local.GetNextItem(hChild,TVGN_NEXT);   //??????TVGN_NEXT????  
 	}  
 	*pResult = 0;
 }
 
-
 void CFTPClientDlg::OnTvnSelchangedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	//LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	m_list_local.DeleteAllItems();  
 	file_num=0;
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;  
@@ -527,7 +582,7 @@ void CFTPClientDlg::OnTvnSelchangedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 		str += '\\';  
 	str += "*.*";  
 	CFileFind file;  
-	BOOL bContinue = file.FindFile(str);  //find ?????
+	BOOL bContinue = file.FindFile(str);  //find ???
 	while(bContinue)  
 	{  
 		bContinue = file.FindNextFile();  
@@ -540,30 +595,18 @@ void CFTPClientDlg::OnTvnSelchangedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 			strfilename = file.GetFileName();
 			CString strSetIcon = temp + strfilename;
 
-			//?????????????????
+			//??????????
 			WIN32_FIND_DATA ffd ;
 			HANDLE hFind = FindFirstFile(strSetIcon,&ffd);
 			SYSTEMTIME stUTC, stLocal;
-			FileTimeToSystemTime(&(ffd.ftLastWriteTime), &stUTC);//???????????????
-			SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);//????????
+			FileTimeToSystemTime(&(ffd.ftLastWriteTime), &stUTC);//??????????
+			SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);//??????
 			FileSize.Format(_T("%d"),ffd.nFileSizeLow);
-			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),stLocal.wYear,stLocal.wMonth,stLocal.wDay,stLocal.wHour,stLocal.wMinute,stLocal.wSecond);//???????????
+			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),stLocal.wYear,stLocal.wMonth,stLocal.wDay,stLocal.wHour,stLocal.wMinute,stLocal.wSecond);//???????
 			m_list_local.InsertItem(file_num,strfilename);
 			m_list_local.SetItemText(file_num,1,FileSize);
 			m_list_local.SetItemText(file_num,2,LastWriteTime);
-			file_num++;
-			//SHGetFileInfo(temp + file.GetFileName(),0,&info,sizeof(&info),SHGFI_DISPLAYNAME | SHGFI_ICON);  
-			//file_num = m_ImageList.Add(info.hIcon);  
-			//m_list_local.InsertItem(file_num,strfilename);  
-			//--get the LastWriteTime of folder/files
-			//myTime.Format("%d. %d %d, %d:%d",stLocal.wDay,stLocal.wMonth,stLocal.wYear,stLocal.wHour,stLocal.wMinute);
-			//--
-			//for(int i=0;i<file_num;i++)
-			/*m_list_local.SetItemText(file_num,0,strfilename);
-			m_list_local.SetItemText(file_num,1,FileSize);
-			m_list_local.SetItemText(file_num,3,LastWriteTime);*/
-			//file.GetLastWriteTime()
-			//FindClose(hFind);		
+			file_num++;	
 		}  
 	}  
 	*pResult = 0;
@@ -572,27 +615,25 @@ void CFTPClientDlg::OnTvnSelchangedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 #define BUFSIZE 4096
 void CFTPClientDlg::OnNMClickTreeLocal(NMHDR *pNMHDR, LRESULT *pResult)
 {
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	CPoint point;
 	TCHAR  buffer[BUFSIZE];   
-	GetCursorPos(&point);//??????????¦Ë??
-	m_tree_local.ScreenToClient(&point);//???????????
+	GetCursorPos(&point);//?????????
+	m_tree_local.ScreenToClient(&point);//???????
 	UINT uFlags;
 
 	HTREEITEM CurrentItem;
 	/*CString local_path;*/
-	CurrentItem=m_tree_local.HitTest(point,&uFlags);//????????????ITEM
+	CurrentItem=m_tree_local.HitTest(point,&uFlags);//?????????ITEM
 	local_path = GetFullPath(CurrentItem);
 	m_edit_local.SetWindowText(local_path);
 	*pResult = 0;
 }
 
-
-
 void CFTPClientDlg::OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
 
 	if(pNMListView->iItem != -1)
@@ -606,7 +647,7 @@ void CFTPClientDlg::OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 		ASSERT( popup != NULL );
 		popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this ); 
 	}
-	//???????????¡¤??
+	//?????????
 	filefile = local_path;
 	local_file_name = m_list_local.GetItemText( pNMListView->iItem, pNMListView->iSubItem ) ;
 	filefile =  filefile  + local_file_name;
@@ -616,7 +657,7 @@ void CFTPClientDlg::OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 void CFTPClientDlg::OnNMRClickListServer(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
 
 	if(pNMListView->iItem != -1)
@@ -632,12 +673,13 @@ void CFTPClientDlg::OnNMRClickListServer(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 	server_file_name = m_list_server.GetItemText( pNMListView->iItem, pNMListView->iSubItem ) ;
 	//AfxMessageBox(server_file_name);
+
 	*pResult = 0;
 }
 void CFTPClientDlg::OnNMClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	//NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
 	/*CString filefile;*/
 	//filefile = local_path;
@@ -653,7 +695,7 @@ void CFTPClientDlg::OnNMClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CFTPClientDlg::OnBnClickedButtonConnetct()
 {
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	m_edit_host.GetWindowText(host);
 	m_edit_user.GetWindowText(user);
 	m_edit_pass.GetWindowText(pass);
@@ -661,17 +703,16 @@ void CFTPClientDlg::OnBnClickedButtonConnetct()
 	ConnectFtp(host,user,pass,port);
 	if(bconnect)
 	{
-		m_list_log.InsertString(0,_T("??????"));
-		m_serverRoot=m_tree_server.InsertItem(_T("??????"));
+		m_list_log.InsertString(0,_T("????"));
+		m_serverRoot=m_tree_server.InsertItem(_T("???"));
 		/*m_tree_server.ModifyStyle(NULL,TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_EDITLABELS);  */
 		UpdateDir(m_serverRoot);
 		GetFTPDriveDir(m_serverRoot);
-		AfxMessageBox(_T("??????"));
+		AfxMessageBox(_T("????"));
 	}
-
 }
 
-DWORD WINAPI CFTPClientDlg::Thread_UploadFile(LPVOID pParam)//????udp????
+DWORD WINAPI CFTPClientDlg::Thread_UploadFile(LPVOID pParam)//??udp??
 {
 	int count=0;
 	while(1)
@@ -681,33 +722,29 @@ DWORD WINAPI CFTPClientDlg::Thread_UploadFile(LPVOID pParam)//????udp????
 		vec_upload vUpload;
 		up_info uploadfile_info;
 		*/
-
 		//CFTPClientDlg::AutoUpload();
 		//int fileNum = vUpload.vec_up.size();
 		CCurl * pCurl = CCurl::Instance();
 		if(flag != 2)
 		{
-			if(vUpload.vec_up.size() != 0)	//?????????????
+			if(vUpload.vec_up.size() != 0)	//????????
 			{
-				flag = 1;		//?????§Ò????????????????
-				DWORD dwNum_user = WideCharToMultiByte(CP_OEMCP,NULL,user,-1,NULL,NULL,0,NULL);
-				char *user_local = new char[dwNum_user+1];
-				WideCharToMultiByte(CP_OEMCP,NULL,user,-1,user_local,dwNum_user,0,NULL);
-				user_local[dwNum_user] = '\0';
+				flag = 1;		//???????,??????
+				
+				char *user_local;
+				CString2char(user_local,user);
 
-				DWORD dwNum_pass = WideCharToMultiByte(CP_OEMCP,NULL,pass,-1,NULL,NULL,0,NULL);
-				char *pass_local = new char[dwNum_pass+1];
-				WideCharToMultiByte(CP_OEMCP,NULL,pass,-1,pass_local,dwNum_pass,0,NULL);
-				pass_local[dwNum_pass]='\0';
+				char *pass_local;
+				CString2char(pass_local,pass);
+		
+				char *host_local;
+				CString2char(host_local,host);
 
-				DWORD dwNum_host = WideCharToMultiByte(CP_ACP,NULL,host,-1,NULL,NULL,0,NULL);
-				char *host_local = new char[dwNum_host];
-				WideCharToMultiByte(CP_OEMCP,NULL,host,-1,host_local,dwNum_host,0,NULL);
 				int port_after = _tstoi(port);
 				pCurl->setHostUserPwd(user_local, pass_local, host_local,port_after);
 				delete user_local;
 				delete pass_local;
-
+				delete host_local;
 				for(int i = 0;i<vUpload.vec_up.size();i++)
 				{
 					uploadfile_info = vUpload.vec_up.at(0);
@@ -715,35 +752,35 @@ DWORD WINAPI CFTPClientDlg::Thread_UploadFile(LPVOID pParam)//????udp????
 					list_log = uploadfile_info.upfile_fullpath;
 					if (pCurl->upload(uploadfile_info.upfile_fullpath,uploadfile_info.upfile_name))
 					{
-						list_log += _T("??????");
-						//m_list_log.InsertString(0,_T("??????"));
-						vUpload.vec_up.erase(vUpload.vec_up.begin());		//?????????????????????????????????
+						list_log += _T("????");
+						//m_list_log.InsertString(0,_T("????"));
+						vUpload.vec_up.erase(vUpload.vec_up.begin());		//?????????????,???????
 					}
 					else 
 					{
 						count++;
-						list_log += _T("??????");
+						list_log += _T("????");
 						CString errCountStr;
-						errCountStr.Format(_T(",????????%d"),count);
+						errCountStr.Format(_T(",????:%d"),count);
 						list_log+= errCountStr;
 
 						Sleep(3000);
 
 						if(count >= 3)
 						{
-							vUpload.vec_up.erase(vUpload.vec_up.begin());//?????????????????????????????????
+							vUpload.vec_up.erase(vUpload.vec_up.begin());//?????????????,???????
 							count = 0;
 						}
 					}
 
 					m_list_log.InsertString(0,list_log);
-					//vUpload.vec_up.erase(vUpload.vec_up.begin());//?????????????????????????????????
+					//vUpload.vec_up.erase(vUpload.vec_up.begin());//?????????????,???????
 				}
 				/*vUpload.vec_up.clear();*/
 			}
 			else
 			{
-				if(flag == 1)		//????????????????????
+				if(flag == 1)		//??????????????
 					flag = 0;
 				Sleep(3000);
 			}
@@ -753,16 +790,14 @@ DWORD WINAPI CFTPClientDlg::Thread_UploadFile(LPVOID pParam)//????udp????
 }
 void CFTPClientDlg::OnUpload()
 {
-	// TODO: ??????????????????
+	// TODO: ????????????
 	USES_CONVERSION;
 
-	DWORD dwNum_path = WideCharToMultiByte(CP_ACP,NULL,filefile,-1,NULL,NULL,0,NULL);
-	char *local_path_after = new char[dwNum_path];
-	WideCharToMultiByte(CP_OEMCP,NULL,filefile,-1,local_path_after,dwNum_path,0,NULL);
+	char *local_path_after;
+	CString2char(local_path_after,filefile);	
 
-	DWORD dwNum_file_name = WideCharToMultiByte(CP_ACP,NULL,local_file_name,-1,NULL,NULL,0,NULL);
-	char *local_file_name_after = new char[dwNum_file_name];
-	WideCharToMultiByte(CP_OEMCP,NULL,local_file_name,-1,local_file_name_after,dwNum_file_name,0,NULL);
+	char *local_file_name_after;
+	CString2char(local_file_name_after,local_file_name);
 
 	strcpy(uploadfile_info.upfile_fullpath,local_path_after);
 	strcpy(uploadfile_info.upfile_name,local_file_name_after);
@@ -771,7 +806,7 @@ void CFTPClientDlg::OnUpload()
 	//uploadfile_info.upfile_name = local_file_name_after;
 	vUpload.vec_up.push_back(uploadfile_info);
 }
-DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????????
+DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????
 {
 	int count=0;
 	while(1)
@@ -784,20 +819,22 @@ DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????????
 		{
 			if(vDownload.vec_down.size() != 0)
 			{
-				flag = 2;//???????????????
-				DWORD dwNum_user = WideCharToMultiByte(CP_OEMCP,NULL,user,-1,NULL,NULL,0,NULL);
-				char *user_local = new char[dwNum_user];
-				WideCharToMultiByte(CP_OEMCP,NULL,user,-1,user_local,dwNum_user,0,NULL);
+				flag = 2;//????????;
+			
+				char *user_local;
+				CString2char(user_local,user);
 
-				DWORD dwNum_pass = WideCharToMultiByte(CP_OEMCP,NULL,pass,-1,NULL,NULL,0,NULL);
-				char *pass_local = new char[dwNum_pass];
-				WideCharToMultiByte(CP_OEMCP,NULL,pass,-1,pass_local,dwNum_pass,0,NULL);
+				char *pass_local;
+				CString2char(pass_local,pass);
+		
+				char *host_local;
+				CString2char(host_local,host);
 
-				DWORD dwNum_host = WideCharToMultiByte(CP_ACP,NULL,host,-1,NULL,NULL,0,NULL);
-				char *host_local = new char[dwNum_host];
-				WideCharToMultiByte(CP_OEMCP,NULL,host,-1,host_local,dwNum_host,0,NULL);
 				int port_after = _tstoi(port);
 				pCurl->setHostUserPwd(user_local, pass_local, host_local,port_after);
+				delete user_local;
+				delete pass_local;
+				delete host_local;
 				CString list_log;
 				list_log = downloadfile_info.downfile_name;
 				for(int i = 0;i<vDownload.vec_down.size();i++)
@@ -805,21 +842,21 @@ DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????????
 					downloadfile_info = vDownload.vec_down.at(0);
 					if (pCurl->download(downloadfile_info.downfile_name,downloadfile_info.downfile_fullpath))
 					{
-						list_log += _T("??????");
-						vDownload.vec_down.erase(vDownload.vec_down.begin());		//??????????????????????????????????
+						list_log += _T("????");
+						vDownload.vec_down.erase(vDownload.vec_down.begin());		//?????????????,???????
 					}
 					else
 					{
 						count++;
-						list_log += _T("???????");
+						list_log += _T("????");
 						CString strCount;
-						strCount.Format(_T(",??????%d"),count);
+						strCount.Format(_T(",????%d"),count);
 						list_log += strCount;
 
 						Sleep(3000);
 						if(count>=3)
 						{
-							vDownload.vec_down.erase(vDownload.vec_down.begin());		//??????????????????????????????????
+							vDownload.vec_down.erase(vDownload.vec_down.begin());		//?????????????,???????
 							count = 0;
 						}
 					}
@@ -829,7 +866,7 @@ DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????????
 			else
 			{
 				if(flag == 2)
-					flag = 0;//??????????????????¦Ë???????
+					flag = 0;//??????,????????
 				Sleep(3000);
 			}
 		}
@@ -838,19 +875,16 @@ DWORD WINAPI CFTPClientDlg::Thread_DownloadFile(LPVOID pParam)//??????????
 }
 void CFTPClientDlg::OnDownload()
 {
-	// TODO: ??????????????????
+	// TODO: ????????????
 	CCurl * pCurl = CCurl::Instance();
 
-	DWORD dwNum_server_file_name = WideCharToMultiByte(CP_OEMCP,NULL,server_file_name,-1,NULL,NULL,0,NULL);
-	char *server_file_name_after = new char[dwNum_server_file_name+1];
-	WideCharToMultiByte(CP_OEMCP,NULL,server_file_name,-1,server_file_name_after,dwNum_server_file_name,0,NULL);
-	server_file_name_after[dwNum_server_file_name]='\0';
+	char *server_file_name_after;
+	CString2char(server_file_name_after,server_file_name);
 
-	DWORD dwNum_server_path = WideCharToMultiByte(CP_OEMCP,NULL,server_path,-1,NULL,NULL,0,NULL);
-	char *server_path_after = new char[dwNum_server_path];
-	WideCharToMultiByte(CP_OEMCP,NULL,server_path,-1,server_path_after,dwNum_server_path,0,NULL);
+	char *server_path_after;
+	CString2char(server_path_after,server_path);
 
-	//char szPath[MAX_PATH];     //?????????¡¤?? 
+	//char szPath[MAX_PATH];     //????????? 
 	/*CString server_path[MAX_PATH];*/
 	CString str;
 	//ZeroMemory(szPath, sizeof(szPath));
@@ -860,12 +894,12 @@ void CFTPClientDlg::OnDownload()
 	bi.hwndOwner = m_hWnd;   
 	bi.pidlRoot = NULL;   
 	bi.pszDisplayName = (LPWSTR)server_dpath;   
-	bi.lpszTitle = _T("?????????????????");   
+	bi.lpszTitle = _T("??????????:");   
 	bi.ulFlags = 0;   
 	bi.lpfn = NULL;   
 	bi.lParam = 0;   
 	bi.iImage = 0;   
-	//??????????????
+	//?????????
 	LPITEMIDLIST lp = SHBrowseForFolder(&bi);  
 	if(lp && SHGetPathFromIDList(lp, (LPWSTR)server_dpath))   
 	{
@@ -873,24 +907,25 @@ void CFTPClientDlg::OnDownload()
 		//AfxMessageBox(str);
 	}
 	else   
-		AfxMessageBox(_T("??§¹???????????????"));  
+		AfxMessageBox(_T("?????,?????"));  
 
 	if(str.Right(1) != '\\')  
 		str += '\\';
 	server_file_path = str + server_file_name;
 
-	DWORD dwNum_server_file_path = WideCharToMultiByte(CP_OEMCP,NULL,server_file_path,-1,NULL,NULL,0,NULL);
-	char *server_file_path_after = new char[dwNum_server_file_path];
-	WideCharToMultiByte(CP_OEMCP,NULL,server_file_path,-1,server_file_path_after,dwNum_server_file_path,0,NULL);
+	char *server_file_path_after;
+	CString2char(server_file_path_after,server_file_path);
+	
 	char *pathpath = strcat(server_path_after,server_file_name_after);
-
+	
 	strcpy(downloadfile_info.downfile_fullpath,server_file_path_after);
 	strcpy(downloadfile_info.downfile_name,pathpath);
-	vDownload.vec_down.push_back(downloadfile_info);//????????push????????
+	vDownload.vec_down.push_back(downloadfile_info);//?????push????
 
 	delete server_file_name_after;
+	delete server_path_after;
+	delete server_file_name_after;
 }
-
 
 void CFTPClientDlg::ConnectFtp(CString sip,CString strusr,CString strpwd,CString strport){
 	BYTE nFild[4];
@@ -900,34 +935,30 @@ void CFTPClientDlg::ConnectFtp(CString sip,CString strusr,CString strpwd,CString
 	//sip.Format("%d.%d.%d.%d",nFild[0],nFild[1],nFild[2],nFild[3]);
 	if (sip.IsEmpty())
 	{
-		AfxMessageBox(_T("IP???????"));
+		AfxMessageBox(_T("IP????!"));
 		return;
 	}
 	if (strport.IsEmpty())
 	{
-		AfxMessageBox(_T("????????"));
+		AfxMessageBox(_T("?????!"));
 		return;
 	}
 	if (strusr.IsEmpty())
 	{
 		return;
 	}
-	//???????Internet??
+	//????Internet??
 	pInternetSession= new CInternetSession(_T("MR"),INTERNET_OPEN_TYPE_PRECONFIG);
 
-	DWORD dwNum_port = WideCharToMultiByte(CP_ACP,NULL,strport,-1,NULL,NULL,0,NULL);
-	char *port = new char[dwNum_port+1];
-	WideCharToMultiByte(CP_OEMCP,NULL,strport,-1,port,dwNum_port,0,NULL);
-	port[dwNum_port]='\0';
+	char *port;
+	CString2char(port,strport);
 	//try
 	//{
-	//????Internet??????pInternetSession?????FTP????
+	//??Internet????pInternetSession????FTP??
 	pFtpConnection=pInternetSession->GetFtpConnection(sip,strusr,strpwd,atoi(port));
 	//pThreadFtpConnection = pInternetSession->GetFtpConnection(sip,strusr,strpwd,atoi(port));
 	delete port;
-
 	bconnect=true;
-
 	//}
 	//catch (CInternetException* pEx)
 	//{
@@ -936,18 +967,17 @@ void CFTPClientDlg::ConnectFtp(CString sip,CString strusr,CString strpwd,CString
 	//	AfxMessageBox(szErr);
 	//	pEx->Delete();
 	//} 
-
 }
 void CFTPClientDlg::UpdateDir(HTREEITEM hParent){
 	//m_list_server.ResetContent();
-	//m_list_server.DeleteAllItems(); // ??????
-	//??§Õ???????§Ö????????????????CFtpFileFind?????	
-	//???????????????????§µ????CFtpFileFind::FindFile???
+	//m_list_server.DeleteAllItems(); // ????
+	//?????????,??????CFtpFileFind???	
+	//????????????,??CFtpFileFind::FindFile??
 	//BOOL bfind=ftpfind.FindFile(NULL);
-	//m_tree_server.Expand(hParent,TVE_EXPAND);              //?????????????§Ò? TVE_EXPAND????§Ò?  
+	//m_tree_server.Expand(hParent,TVE_EXPAND);              //????????? TVE_EXPAND????  
 	//GetFTPDriveDir(hParent); 
-	//m_ImageList.Create(32,32,ILC_COLOR32,10,30);     //???????????CImageList????   
-	//m_list_server.SetImageList(&m_ImageList,LVSIL_NORMAL);  //????¦Ï?????????????   
+	//m_ImageList.Create(32,32,ILC_COLOR32,10,30);     //??????CImageList??   
+	//m_list_server.SetImageList(&m_ImageList,LVSIL_NORMAL);  //???????????   
 	m_tree_server.ModifyStyle(NULL,TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_EDITLABELS);  
 	CFtpFileFind ftpfind(pFtpConnection);
 	BOOL bfind=ftpfind.FindFile(NULL);
@@ -956,56 +986,51 @@ void CFTPClientDlg::UpdateDir(HTREEITEM hParent){
 	{
 		bfind=ftpfind.FindNextFile();
 		CString strpath;
-		if(ftpfind.IsDirectory() && !ftpfind.IsDots())          //?????????????????"."  
-			m_tree_server.InsertItem(ftpfind.GetFileName(),/*hChild*/hParent); //??????¡¤????????????  
+		if(ftpfind.IsDirectory() && !ftpfind.IsDots())          //???????????"."  
+			m_tree_server.InsertItem(ftpfind.GetFileName(),/*hChild*/hParent); //????????????  
 		if(!ftpfind.IsDirectory() && !ftpfind.IsDots())
 		{
 			SHFILEINFO info;   
-			CString strfilename = ftpfind.GetFileName();//????????
+			CString strfilename = ftpfind.GetFileName();//?????
 
-			FileSize.Format(_T("%I64d"),ftpfind.GetLength());//?????????????§³
-			CTime time;//????????????
-			ftpfind.GetLastWriteTime(time);//???????????
-			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),time.GetYear(),time.GetMonth(),time.GetDay(),time.GetHour(),time.GetMinute(),time.GetSecond());//???????????
+			FileSize.Format(_T("%I64d"),ftpfind.GetLength());//?????????
+			CTime time;//???????
+			ftpfind.GetLastWriteTime(time);//???????
+			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),time.GetYear(),time.GetMonth(),time.GetDay(),time.GetHour(),time.GetMinute(),time.GetSecond());//???????
 
-			//????????list???
-
+			//?????list??
 			m_list_server.InsertItem(file_num,strfilename);
 			m_list_server.SetItemText(file_num,1,FileSize);
 			m_list_server.SetItemText(file_num,2,LastWriteTime);
-
 			file_num++;
 		}
-
-
 	}
-
-	m_tree_server.Expand(hParent,TVE_EXPAND);              //?????????????§Ò? TVE_EXPAND????§Ò?  
+	m_tree_server.Expand(hParent,TVE_EXPAND);              //????????? TVE_EXPAND????  
 }
 
 void CFTPClientDlg::GetFTPDriveDir(HTREEITEM hParent)
 {
-	HTREEITEM hChild = m_tree_server.GetChildItem(hParent);   //??????¦Ë???§Ö?????  
+	HTREEITEM hChild = m_tree_server.GetChildItem(hParent);   //??????????  
 	while(hChild)                                        
 	{ 
-		//????????????????InsertItem??????                                
-		CString strText = m_tree_server.GetItemText(hChild);  //?????§Ò??????????  
-		if(strText.Right(1) != '\\')                   //?????1??????????????nCount?????  
+		//???????????InsertItem????                                
+		CString strText = m_tree_server.GetItemText(hChild);  //?????????  
+		if(strText.Right(1) != '\\')                   //???1????????nCount???  
 			strText += _T('\\');  
 		strText += "*.*";  
-		CFtpFileFind ftpfind(pFtpConnection);//????FTP????
-		//BOOL bContinue = ftpfind.FindFile(strText);              //?????????????????  
-		BOOL bContinue = ftpfind.FindFile(strText);              //????????????????? 
+		CFtpFileFind ftpfind(pFtpConnection);//??FTP??
+		//BOOL bContinue = ftpfind.FindFile(strText);              //??????????  
+		BOOL bContinue = ftpfind.FindFile(strText);              //?????????? 
 		while(bContinue)  
 		{  
-			bContinue = ftpfind.FindNextFile();                  //????????????  
-			if(ftpfind.IsDirectory() && !ftpfind.IsDots())          //?????????????????"."  
-				m_tree_server.InsertItem(ftpfind.GetFileName(),hChild/*hParent*/); //??????¡¤????????????  
+			bContinue = ftpfind.FindNextFile();                  //???????  
+			if(ftpfind.IsDirectory() && !ftpfind.IsDots())          //???????????"."  
+				m_tree_server.InsertItem(ftpfind.GetFileName(),hChild/*hParent*/); //????????????  
 		}  
-		GetFTPDriveDir(hChild/*hParent*/);                                  //??????  
-		hChild = m_tree_server.GetNextItem(hChild,TVGN_NEXT);        //??????¦Ï??TVGN_NEXT???????  
+		GetFTPDriveDir(hChild/*hParent*/);                                  //????  
+		hChild = m_tree_server.GetNextItem(hChild,TVGN_NEXT);        //??????TVGN_NEXT????  
 	}  
-	//m_tree_server.Expand(hParent,TVE_EXPAND);              //?????????????§Ò? TVE_EXPAND????§Ò? 
+	//m_tree_server.Expand(hParent,TVE_EXPAND);              //????????? TVE_EXPAND???? 
 }
 CString CFTPClientDlg::GetFTPFullPath(HTREEITEM hCurrent)
 {
@@ -1013,70 +1038,71 @@ CString CFTPClientDlg::GetFTPFullPath(HTREEITEM hCurrent)
 	CString strReturn = L"";  
 	while(hCurrent != m_serverRoot)  
 	{  
-		strTemp = m_tree_server.GetItemText(hCurrent);    //?????§Ò??????????  
+		strTemp = m_tree_server.GetItemText(hCurrent);    //?????????  
 		if(strTemp.Right(1) != '\\')  
 			strTemp += '\\';  
 		strReturn = strTemp  + strReturn;          
-		hCurrent = m_tree_server.GetParentItem(hCurrent); //???????????  
+		hCurrent = m_tree_server.GetParentItem(hCurrent); //???????  
 	}  
 	return strReturn;  
 }
 void CFTPClientDlg::AddFTPSubDir(HTREEITEM hParent)
 {
-	CString strPath = GetFTPFullPath(hParent);     //????¡¤??  
+	CString strPath = GetFTPFullPath(hParent);     //?????  
 	if(strPath.Right(1) != '\\')  
 		strPath += '\\';  
 	strPath += "*.*";  
 	//CFileFind file;  
-	CFtpFileFind ftpfind(pFtpConnection);//????FTP????
-	BOOL bContinue = ftpfind.FindFile(strPath);    //?????????????????  
+	CFtpFileFind ftpfind(pFtpConnection);//??FTP??
+	BOOL bContinue = ftpfind.FindFile(strPath);    //??????????  
 	while(bContinue)  
 	{  
-		bContinue = ftpfind.FindNextFile();        //????????????  
+		bContinue = ftpfind.FindNextFile();        //???????  
 		if(ftpfind.IsDirectory() && !ftpfind.IsDots())  
 			m_tree_server.InsertItem(ftpfind.GetFileName(),hParent);  
 	}  
 }
 
-
-
 void CFTPClientDlg::OnTvnItemexpandedTreeServer(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
-	// TODO: ????????????????????
-	TVITEM item = pNMTreeView->itemNew;                  //????\????????????????????  
+	// TODO: ??????????????
+	TVITEM item = pNMTreeView->itemNew;                  //??\????????????  
 	if(item.hItem == m_serverRoot)  
 		return;  
-	HTREEITEM hChild = m_tree_server.GetChildItem(item.hItem);  //??????¦Ë???§Ö?????  
+	HTREEITEM hChild = m_tree_server.GetChildItem(item.hItem);  //??????????  
 	while(hChild)  
 	{  
-		AddFTPSubDir(hChild);                               //???????  
-		hChild = m_tree_server.GetNextItem(hChild,TVGN_NEXT);   //??????¦Ï??TVGN_NEXT???????  
+		AddFTPSubDir(hChild);                               //?????  
+		hChild = m_tree_server.GetNextItem(hChild,TVGN_NEXT);   //??????TVGN_NEXT????  
 	} 
 	*pResult = 0;
 }
-void CFTPClientDlg::OnNMClickTreeServer(NMHDR *pNMHDR, LRESULT *pResult)//???????????¦Ï??
+void CFTPClientDlg::OnNMClickTreeServer(NMHDR *pNMHDR, LRESULT *pResult)//?????????
 {
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	CPoint point;
 	TCHAR  buffer[BUFSIZE];   
-	GetCursorPos(&point);//??????????¦Ë??
-	m_tree_server.ScreenToClient(&point);//???????????
+	GetCursorPos(&point);//?????????
+	m_tree_server.ScreenToClient(&point);//???????
 	UINT uFlags;
 
 	HTREEITEM CurrentItem;
-	//CString server_path;//??????¡¤??
-	CurrentItem=m_tree_server.HitTest(point,&uFlags);//????????????ITEM
+	//CString server_path;//?????
+	CurrentItem=m_tree_server.HitTest(point,&uFlags);//?????????ITEM
 	server_path = GetFTPFullPath(CurrentItem);
 
 	m_edit_server.SetWindowText(server_path);
+	m_list_server.DeleteAllItems();
+	UpdateDir(m_serverRoot);
+	GetFTPDriveDir(m_serverRoot);
 	*pResult = 0;
 }
 
 void CFTPClientDlg::OnTvnSelchangedTreeServer(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	//LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
-	// TODO: ????????????????????
+	// TODO: ??????????????
 	m_list_server.DeleteAllItems();  
 	file_num=0;
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;  
@@ -1088,7 +1114,7 @@ void CFTPClientDlg::OnTvnSelchangedTreeServer(NMHDR *pNMHDR, LRESULT *pResult)
 		str += '\\';  
 	str += "*.*";  
 	/*CFileFind file;  */
-	CFtpFileFind ftpfind(pFtpConnection);//????FTP????
+	CFtpFileFind ftpfind(pFtpConnection);//??FTP??
 	BOOL bContinue = ftpfind.FindFile(str);  
 	while(bContinue)  
 	{  
@@ -1100,40 +1126,29 @@ void CFTPClientDlg::OnTvnSelchangedTreeServer(NMHDR *pNMHDR, LRESULT *pResult)
 			//CString file_type;
 			int index = temp.Find(L"*.*");  
 			temp.Delete(index,3);  
-			CString strfilename = ftpfind.GetFileName();//????????
+			CString strfilename = ftpfind.GetFileName();//?????
 			CString strSetIcon = temp + strfilename;
 
-			FileSize.Format(_T("%I64d"),ftpfind.GetLength());//?????????????§³
-			CTime time;//????????????
-			ftpfind.GetLastWriteTime(time);//???????????
-			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),time.GetYear(),time.GetMonth(),time.GetDay(),time.GetHour(),time.GetMinute(),time.GetSecond());//???????????
+			FileSize.Format(_T("%I64d"),ftpfind.GetLength());//?????????
+			CTime time;//???????
+			ftpfind.GetLastWriteTime(time);//???????
+			LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),time.GetYear(),time.GetMonth(),time.GetDay(),time.GetHour(),time.GetMinute(),time.GetSecond());//???????
 
-			//????????list???
-			//strfilename = GBKToUTF8(strfilename);
-			/*setlocale(LC_ALL,"chs");
-			char* p = new char[1024];
-			wcstombs( p ,strfilename,strfilename.GetLength() );
-			std::string out = p;*/
-			//CString namename = GBKToUTF8(strfilename);
-			/*CString ser_name;
-			ser_name.Format(_T("%s"), namename.c_str());*/
+			//?????list??
 			m_list_server.InsertItem(file_num,strfilename);
 			m_list_server.SetItemText(file_num,1,FileSize);
 			m_list_server.SetItemText(file_num,2,LastWriteTime);
-
 			//ftpfind.Close();
 			file_num++;
-
-
 			//AfxMessageBox(strSetIcon);
 			/*	DWORD dw = SHGetFileInfo(strSetIcon,0,&info,sizeof(&info),SHGFI_DISPLAYNAME | SHGFI_ICON);  
 			int i = m_ImageList.Add(info.hIcon);  */
-			//?????????????????
+			//??????????
 			//WIN32_FIND_DATA ffd ;
 			//HANDLE hFind = FtpFindFirstFile(pFtpConnection,strSetIcon,&ffd,2,0);
 			//SYSTEMTIME stUTC, stLocal;
-			//FileTimeToSystemTime(&(ffd.ftLastWriteTime), &stUTC);//???????????????
-			//SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);//????????
+			//FileTimeToSystemTime(&(ffd.ftLastWriteTime), &stUTC);//??????????
+			//SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);//??????
 			//FileSize.Format(_T("%d"),ffd.nFileSizeLow);
 
 			//LastWriteTime.Format(_T("%d/%d/%d %d:%d:%d"),stLocal.wYear,stLocal.wMonth,stLocal.wDay,stLocal.wHour,stLocal.wMinute,stLocal.wSecond);
@@ -1150,20 +1165,12 @@ void CFTPClientDlg::initLocalList()
 	CDC *pDC = GetDlgItem(IDC_LIST_LOCAL)->GetDC();
 	GetDlgItem(IDC_LIST_LOCAL)->GetClientRect(rect);
 	AexX = (int)(rect.Width()/4.0);
-	//AexY = rect.Height();
-	m_list_local.InsertColumn(0,_T("?????"));//?????
-	m_list_local.InsertColumn(1,_T("?????§³(???)"));
-	//m_list_local.InsertColumn(2,_T("???????"));//?????
-	m_list_local.InsertColumn(2,_T("??????"));
-	//index1 = m_list_local.InsertColumn(1,_T("????¡¤??"));
-	// m_list_local.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES |LVS_EX_CHECKBOXES);//???? 
-	//m_list_local.SetExtendedStyle(m_list_local.GetExtendedStyle()|LVS_EX_CHECKBOXES|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP); 
-	//m_list_local.ModifyStyle(1,LVS_REPORT|LVS_EX_CHECKBOXES|LVS_SHOWSELALWAYS);
-	//m_list_local.SetExtendedStyle(LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES/*|LVS_EX_CHECKBOXES*/|LVS_SHOWSELALWAYS|LVS_EX_HEADERDRAGDROP);
-	m_list_local.SetColumnWidth(0, (int)(1.3*AexX));//?????§á?
+	m_list_local.InsertColumn(0,_T("???"));//???
+	m_list_local.InsertColumn(1,_T("????(??)"));
+	m_list_local.InsertColumn(2,_T("????"));
+	m_list_local.SetColumnWidth(0, (int)(1.3*AexX));//????
 	m_list_local.SetColumnWidth(1, (int)(1.2*AexX));
 	m_list_local.SetColumnWidth(2, (int)(1.5*AexX));
-
 	m_list_local.SetRedraw(TRUE); 
 }
 void CFTPClientDlg::initServerList()
@@ -1172,24 +1179,15 @@ void CFTPClientDlg::initServerList()
 	CDC *pDC = GetDlgItem(IDC_LIST_SERVER)->GetDC();
 	GetDlgItem(IDC_LIST_SERVER)->GetClientRect(rect);
 	AexX = (int)(rect.Width()/4.0);
-	//AexY = rect.Height();
-	m_list_server.InsertColumn(0,_T("?????"));//?????
-	m_list_server.InsertColumn(1,_T("?????§³(???)"));
-	//m_list_server.InsertColumn(2,_T("???????"));//?????
-	m_list_server.InsertColumn(2,_T("??????"));
-	//index1 = m_list_server.InsertColumn(1,_T("????¡¤??"));
-	// m_list_server.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES |LVS_EX_CHECKBOXES);//???? 
-	//m_list_server.SetExtendedStyle(m_list_server.GetExtendedStyle()|LVS_EX_CHECKBOXES|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP); 
-	//m_list_server.ModifyStyle(1,LVS_REPORT|LVS_EX_CHECKBOXES|LVS_SHOWSELALWAYS);
-	//m_list_server.SetExtendedStyle(LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES/*|LVS_EX_CHECKBOXES*/|LVS_SHOWSELALWAYS|LVS_EX_HEADERDRAGDROP);
-
-	m_list_server.SetColumnWidth(0, (int)(1.3*AexX));//?????§á?
+	m_list_server.InsertColumn(0,_T("???"));//???
+	m_list_server.InsertColumn(1,_T("????(??)"));
+	m_list_server.InsertColumn(2,_T("????"));
+	m_list_server.SetColumnWidth(0, (int)(1.3*AexX));//????
 	m_list_server.SetColumnWidth(1, (int)(1.2*AexX));
 	m_list_server.SetColumnWidth(2, (int)(1.5*AexX));
-
 	m_list_server.SetRedraw(TRUE); 
 }
-// ????????????????CListCtrl???§á?  
+// ????,????CListCtrl???  
 void CFTPClientDlg::AutoAdjustColumnWidth(CListCtrl pListCtrl)  
 {  
 	pListCtrl.SetRedraw(FALSE);  
@@ -1228,54 +1226,32 @@ CString CFTPClientDlg::GBKToUTF8(CString strGBK)
 	delete[]szUTF8;
 	return strstr;
 }
-void CFTPClientDlg::On32784()			//????????????????????§Ö?
+void CFTPClientDlg::On32784()			//???????,????????
 {
-	// TODO: ??????????????????
+	// TODO: ????????????
 	CAutoUpDownLoad autoUpDown;
 	autoUpDown.DoModal();
 	SetTimer(1,1000,NULL);
-	//t = CTime::GetCurrentTime(); //?????????
+	//t = CTime::GetCurrentTime(); //??????
 }
 
 void CFTPClientDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	// TODO: ????????????????????/?????????
-	//switch (nIDEvent)
-	//	{
-	//	case 1:
-	//AfxMessageBox(_T("123123"));
-
-	//	break;
-	//case 2:
-	//	//	AutoDownload();
-	//	break;
-	//case 3:
-	//	//	SetTimeUpDown();
-	//	break;
-	//	default:
-	//		break;
-	//	}
-
-
+	// TODO: ?????????????/??????
 	switch (nIDEvent)
 	{
 	case 10:
-		//AutoDownload();
 		AutoUpload();
-
-		//AfxMessageBox(_T("time out of 10"));
 		break;
 	}
-
-
 	CDialogEx::OnTimer(nIDEvent);
 }
-BOOL CFTPClientDlg::SetTimeUpDown()//?§Ø??????
+BOOL CFTPClientDlg::SetTimeUpDown()//??????
 {
-	t = CTime::GetCurrentTime(); //?????????
-	int h=t.GetHour(); //??????????
-	int mm=t.GetMinute(); //???????
-	int s=t.GetSecond(); //?????
+	t = CTime::GetCurrentTime(); //??????
+	int h=t.GetHour(); //???????
+	int mm=t.GetMinute(); //????
+	int s=t.GetSecond(); //???
 
 	CString temp_uphour,temp_upminute,temp_upsecond;
 	CString temp_downhour,temp_downminute,temp_downsecond;
@@ -1291,42 +1267,30 @@ BOOL CFTPClientDlg::SetTimeUpDown()//?§Ø??????
 	{
 		isCorrect=TRUE;
 		return isCorrect;
-
 	}
 	if ((temp_downhour == down_hour)&&(temp_downminute == down_minute))
 	{
 		isCorrect=TRUE;
 		return isCorrect;
-
 	}
 }
-void CFTPClientDlg::SetUpDownMode()//?????????????
+void CFTPClientDlg::SetUpDownMode()//????????
 {
-	//if (isCorrect)
-	//{
-	//	if (time_up != 0)
-	//	{
-	//		SetTimer(1,time_up,NULL);
-	//	}
-	//	if (time_down != 0)
-	//	{
-	//		SetTimer(2,time_down,NULL);
-	//	}
-	//}
+
 }
-void CFTPClientDlg::AutoDownload()//???????
+void CFTPClientDlg::AutoDownload()//????
 {
 	CCurl * pCurl = m_pCurl;  //CCurl::Instance();
-	CString pathDes = TmpDownloadFolderPath;//?????????
-	CString str = DownloadFolderPath; //????????
+	CString pathDes = TmpDownloadFolderPath;//??????
+	CString str = DownloadFolderPath; //?????
 	CString strDownloadFile;
-	CString strfilename;//?????
+	CString strfilename;//???
 	if(str.Right(1) != '\\')  
 		str += '\\';  
 	str += "*.*";  
 	/*CFileFind file;  */
-	CFtpFileFind ftpfind(pFtpConnection);//????FTP????
-	//CFtpFileFind ftpfind(pThreadFtpConnection);//????FTP????pThreadFtpConnection
+	CFtpFileFind ftpfind(pFtpConnection);//??FTP??
+	//CFtpFileFind ftpfind(pThreadFtpConnection);//??FTP??pThreadFtpConnection
 	BOOL bContinue = ftpfind.FindFile(str);  
 	while(bContinue)  
 	{  
@@ -1339,21 +1303,17 @@ void CFTPClientDlg::AutoDownload()//???????
 			//CString file_type;
 			int index = temp.Find(L"*.*");  
 			temp.Delete(index,3);  
-			strfilename = ftpfind.GetFileName();//????????
+			strfilename = ftpfind.GetFileName();//?????
 			strDownloadFile = temp + strfilename;//?
-			pathDes = pathDes + strfilename;//???
+			pathDes = pathDes + strfilename;//??
 		}
 		if (strfilename.GetLength()!=0)
 		{
-			DWORD dwNum_source_file_path = WideCharToMultiByte(CP_OEMCP,NULL,strDownloadFile,-1,NULL,NULL,0,NULL);
-			char *source_file_path_after = new char[dwNum_source_file_path+1];
-			WideCharToMultiByte(CP_OEMCP,NULL,strDownloadFile,-1,source_file_path_after,dwNum_source_file_path,0,NULL);//?¡¤??
-			source_file_path_after[dwNum_source_file_path]='\0';
+			char *source_file_path_after;
+			CString2char(source_file_path_after,strDownloadFile);
 
-			DWORD dwNum_dest_file_path = WideCharToMultiByte(CP_OEMCP,NULL,pathDes,-1,NULL,NULL,0,NULL);
-			char *dest_file_path_after = new char[dwNum_dest_file_path+1];
-			WideCharToMultiByte(CP_OEMCP,NULL,pathDes,-1,dest_file_path_after,dwNum_dest_file_path,0,NULL);//?¡¤??
-			dest_file_path_after[dwNum_dest_file_path]='\0';
+			char *dest_file_path_after;
+			CString2char(dest_file_path_after,pathDes);
 			//char *pathpath = strcat(server_path_after,server_file_name_after);
 			strcpy(downloadfile_info.downfile_fullpath,dest_file_path_after);
 			strcpy(downloadfile_info.downfile_name,source_file_path_after);
@@ -1364,54 +1324,54 @@ void CFTPClientDlg::AutoDownload()//???????
 		}
 	}
 }
-void CFTPClientDlg::AutoUpload()//??????
+void CFTPClientDlg::AutoUpload()//????
 {
 	CCurl * pCurl = CCurl::Instance();
 
-	CString strSetUploadFilePath;//???????¡¤??
-	CString str = TmpUploadFolderPath; //???¡¤??
+	CString strSetUploadFilePath;//??????
+	CString str = TmpUploadFolderPath; //????
 	CString strfilename;
-	CString fileNameSingle;//????¡¤??
-	CString fileNameFinal;//?????
+	CString fileNameSingle;//?????
+	CString fileNameFinal;//???
 	CString tmp_path;
-	//CWnd *List = GetDlgItem(IDC_LIST_LOG);//???????
+	//CWnd *List = GetDlgItem(IDC_LIST_LOG);//????
 	if(str.Right(1) != '\\')  
 		str += '\\';  
 	str += "*.*";  
 	CFileFind file;  
-	BOOL bContinue = file.FindFile(str);  //find ?????
+	BOOL bContinue = file.FindFile(str);  //find ???
 	while(bContinue)  
 	{  
 		bContinue = file.FindNextFile();  
-		char temp_path[1024];//????????txt????§Õ??????¡¤??
+		char temp_path[1024];//?????txt??????????
 		if(!file.IsDirectory() && !file.IsDots())  
 		{  
 			SHFILEINFO info;  
-			CString temp = str; //¡¤?? 
+			CString temp = str; //?? 
 			int index = temp.Find(L"*.*");  
 			temp.Delete(index,3);  
 			strfilename = file.GetFileName();
-			strSetUploadFilePath = temp + strfilename;//????????????¡¤??
-			DWORD dwNum_file_name = WideCharToMultiByte(CP_ACP,NULL,strSetUploadFilePath,-1,NULL,NULL,0,NULL);
-			char *temp_filename = new char[dwNum_file_name];
-			WideCharToMultiByte(CP_OEMCP,NULL,strSetUploadFilePath,-1,temp_filename,dwNum_file_name,0,NULL);
-			if(strstr(temp_filename,".path.txt"))//???txt????§Ö?????		//?????????.path.txt?????????????????
+			strSetUploadFilePath = temp + strfilename;//?????????
+			
+			char *temp_filename;
+			CString2char(temp_filename,strSetUploadFilePath);
+
+			if(strstr(temp_filename,".path.txt"))//??txt??????		//??????.path.txt???????????
 			{
 				FILE *temp_pathFile;
 				temp_pathFile = fopen(temp_filename,"r+");
 				if(temp_pathFile != NULL)
 					fgets(temp_path,1024,temp_pathFile);
 				temp_path[strlen(temp_path)-1] = 0;
-				/*?????????????¡¤???§ß??????*/
+				/*???????????????*/
 				//fileNameSingle.Format(_T("%s"),temp_path);
 				fileNameSingle=temp_path;
 				int pos_temp = fileNameSingle.ReverseFind('\\');
 				fileNameFinal = fileNameSingle.Mid(pos_temp+1);
 
-				/*?????????????¡¤??????????push??vector??*/
-				DWORD dwNum_fileNameFinal = WideCharToMultiByte(CP_ACP,NULL,fileNameFinal,-1,NULL,NULL,0,NULL);
-				char *fileName_needUp = new char[dwNum_fileNameFinal];
-				WideCharToMultiByte(CP_OEMCP,NULL,fileNameFinal,-1,fileName_needUp,dwNum_fileNameFinal,0,NULL);
+				/*???????????????push?vector?*/
+				char *fileName_needUp;
+				CString2char(fileName_needUp,fileNameFinal);
 
 				struct stat file_info;
 				FileInfo psrc_local;
@@ -1420,9 +1380,16 @@ void CFTPClientDlg::AutoUpload()//??????
 				if (getfile_size == nullptr)
 				{
 					int err = GetLastError();
-					CLOG("?????%s???,err= %d",temp_path,err);
-					//return 0;
-				}
+					CLOG("????%s??,err= %d",temp_path,err);
+					if(!DeleteFile(tmp_path))		//??????txt??
+						{
+							int err = GetLastError();
+							CLOG("ERROR err = %d",err);
+						}
+					m_list_log.InsertString(0,_T("Data file not found"));//
+					continue;
+				//return 0;
+				} 
 				else
 				{
 					_fseeki64(getfile_size, 0L, SEEK_END);
@@ -1431,14 +1398,8 @@ void CFTPClientDlg::AutoUpload()//??????
 
 					if(file_size != 0)
 					{
-						//psrc_local.filesize = file_info.st_size;	
-						//CString msg;
-						//msg.Format(_T("%d"),file_info.st_size);//intToCString
-						//msg.Format(_T("%l64d"),file_size);//intToCString
-						//DWORD dwNum_msg = WideCharToMultiByte(CP_OEMCP,NULL,msg,-1,NULL,NULL,0,NULL);
-						//WideCharToMultiByte(CP_OEMCP,NULL,msg,-1,msg_after,dwNum_msg,0,NULL);//CString To Char*
 						psrc_local.filesize = file_size;
-						char temp_file[256];//=new char[100];//???????????§³????????
+						char temp_file[256];//=new char[100];//?????????????
 						sprintf(temp_file,"%s.txt",temp_path);
 						FILE *temp ;
 						temp = fopen(temp_file,"w+"); 
@@ -1454,11 +1415,11 @@ void CFTPClientDlg::AutoUpload()//??????
 								fprintf(temp,"%s",temp_content);
 							}
 							fclose(temp);
-							/*???txt???*/
+							/*??txt??*/
 							//tmp_path.Format(_T("%s"),temp_filename);
 							tmp_path = temp_filename;
 							fclose(temp_pathFile);
-							if(!DeleteFile(tmp_path))		//?????????txt???
+							if(!DeleteFile(tmp_path))		//??????txt??
 							{
 								int err = GetLastError();
 								CLOG("ERROR err = %d",err);
@@ -1472,22 +1433,21 @@ void CFTPClientDlg::AutoUpload()//??????
 						int pos_temp = size_path.ReverseFind('\\');
 						size_filename = size_path.Mid(pos_temp+1);
 
-						DWORD dwNum_size_file = WideCharToMultiByte(CP_ACP,NULL,size_filename,-1,NULL,NULL,0,NULL);
-						char *sizefile = new char[dwNum_size_file+1];
-						WideCharToMultiByte(CP_OEMCP,NULL,size_filename,-1,sizefile,dwNum_size_file,0,NULL);
-						sizefile[dwNum_size_file]='\0';
+						char *sizefile;
+						CString2char(sizefile,size_filename);
 
 						strcpy(uploadfile_info.upfile_fullpath,temp_file);
 						strcpy(uploadfile_info.upfile_name,sizefile);
 						delete sizefile;
-						vUpload.vec_up.push_back(uploadfile_info);		//????txt??????
+						vUpload.vec_up.push_back(uploadfile_info);		//??txt????
 
 						strcpy(uploadfile_info.upfile_fullpath,temp_path);
 						strcpy(uploadfile_info.upfile_name,fileName_needUp);
-						vUpload.vec_up.push_back(uploadfile_info);		//?????????????§Ò?
+						vUpload.vec_up.push_back(uploadfile_info);		//?????????
+						delete fileName_needUp;
+						delete temp_filename;
 					}
 				}
-
 			}
 		}
 	}
@@ -1506,22 +1466,14 @@ long long CFTPClientDlg::get_file_size(FILE *file)
 	return nFileSize;
 }
 
-
-//??¡Â???1.?????char *p?? 2.????????? 3.???char*p 4.delete p??????
+//????1.???char *p; 2.????? 3.??char*p 4.delete p????
 void CFTPClientDlg::CString2char(char* &p,CString cstr)  
 {
 	DWORD len = WideCharToMultiByte(CP_ACP,NULL,cstr,-1,NULL,NULL,0,NULL);
 	p = new char[len+1];
-	p[len]='\0';
 	WideCharToMultiByte(CP_OEMCP,NULL,cstr,-1,p,len,0,NULL);
+	p[len]='\0';
 }
-
-//void CAboutDlg::On32785()
-//{
-//	// TODO: ??????????????????
-//	KillTimer(1);
-//	KillTimer(2);
-//}
 
 LRESULT CFTPClientDlg::OnShowTask(WPARAM wParam, LPARAM lParam)
 {
@@ -1529,26 +1481,37 @@ LRESULT CFTPClientDlg::OnShowTask(WPARAM wParam, LPARAM lParam)
 		return 1;
 	switch(lParam)
 	{
-	case WM_RBUTTONUP://??????????????
+	case WM_RBUTTONUP://????????
 		{
 			LPPOINT lpoint = new tagPOINT;
-			::GetCursorPos(lpoint);//??????¦Ë??
+			::GetCursorPos(lpoint);//??????
 			CMenu menu;
-			menu.CreatePopupMenu();//??????????????
-			//menu.AppendMenu(MF_STRING, WM_DESTROY, "???");//Appends a new item to the end ofthis menu
-			//menu.AppendMenu(MF_STRING, WM_DESTROY,_T("???"));
+			menu.CreatePopupMenu();//????????
+			//menu.AppendMenu(MF_STRING, WM_DESTROY, L"??");//Appends a new item to the end ofthis menu
+			menu.AppendMenu(MF_STRING, WM_DESTROY,_T("??"));
 			menu.TrackPopupMenu(TPM_LEFTALIGN, lpoint->x ,lpoint->y,this);
 			HMENU hmenu = menu.Detach();
 			menu.DestroyMenu();
 			delete lpoint;
 			break;
 		}
-	case WM_LBUTTONDBLCLK://???????????
-		this->ShowWindow(SW_SHOWNORMAL);//?????????
+	case WM_LBUTTONDBLCLK://???????
+		this->ShowWindow(SW_SHOWNORMAL);//?????
 	}
 	return 0;
 }
 
+void CFTPClientDlg::OnSettingserver()//????????????
+{
+	// TODO: ????????????
+	CSettingServer setServer;
+	setServer.DoModal();
+}
 
-
+void CFTPClientDlg::OnLogout()//????
+{
+	// TODO: ????????????
+	HWND hwnd = ::GetForegroundWindow();
+	::SendMessage(hwnd,WM_CLOSE,0,0);
+}
 

@@ -130,6 +130,7 @@ public:
 	void AutoDownload();//实现定时下载
 	BOOL SetTimeUpDown();//设置时间
 	void SetUpDownMode();//设置上传下载模式
+	void deleteEnter(char* buf);
 	CString GetFullPath(HTREEITEM hCurrent);
 	CString GetFTPFullPath(HTREEITEM hCurrent);
 	afx_msg void OnTvnItemexpandedTreeLocal(NMHDR *pNMHDR, LRESULT *pResult);
@@ -159,4 +160,6 @@ public:
 
 	static long long get_file_size(FILE *file);						 // 获取上传文件大小
 	static void CString2char(char* &p,CString cstr);
+	afx_msg void OnSettingserver();
+	afx_msg void OnLogout();
 };
