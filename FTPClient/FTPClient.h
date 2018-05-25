@@ -23,7 +23,7 @@ public:
 // ÷ÿ–¥
 public:
 	virtual BOOL InitInstance();
-
+	HANDLE hMutex;
 //  µœ÷
 
 	DECLARE_MESSAGE_MAP()

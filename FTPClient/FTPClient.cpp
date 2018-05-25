@@ -50,7 +50,14 @@ BOOL CFTPClientApp::InitInstance()
 	InitCommonControlsEx(&InitCtrls);
 
 	CWinApp::InitInstance();
-
+	//如果程序已经运行，则报错
+	hMutex = CreateMutex(NULL,FALSE,_T("FTPClient"));
+	if(GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		AfxMessageBox(_T("程序已经运行，请不要重复操作！"));
+		CloseHandle(hMutex);
+		return FALSE;
+	}
 
 	AfxEnableControlContainer();
 
