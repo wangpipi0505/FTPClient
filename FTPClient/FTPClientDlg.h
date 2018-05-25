@@ -160,6 +160,8 @@ public:
 
 	static long long get_file_size(FILE *file);						 // 获取上传文件大小
 	static void CString2char(char* &p,CString cstr);
+	static void TcharToChar(const TCHAR* tcharStr,char* charStr);
+	void findIniFile();//??ini????,????????????
 	afx_msg void OnSettingserver();
 	afx_msg void OnLogout();
 };

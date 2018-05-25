@@ -15,6 +15,7 @@
 #include "SettingServer.h"
 #include <string.h>
 #include<atlconv.h>
+#include<windows.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -138,6 +139,30 @@ CFTPClientDlg::~CFTPClientDlg()
 	CoUninitialize(); // ?????
 }
 // CFTPClientDlg ??????
+void CFTPClientDlg::TcharToChar(const TCHAR* tcharStr,char* charStr)
+{
+	int iLength;
+	iLength = WideCharToMultiByte(CP_ACP,0,tcharStr,-1,NULL,0,NULL,NULL);
+	WideCharToMultiByte(CP_ACP,0,tcharStr,-1,charStr,iLength,NULL,NULL);
+}
+void CFTPClientDlg::findIniFile()
+{
+	TCHAR tcExePath[MAX_PATH];
+	::GetModuleFileName(NULL,tcExePath,MAX_PATH);
+	TCHAR *pfind = _tcsrchr(tcExePath,'\\');
+	if (pfind == NULL)
+	{
+		return;
+	}
+	*pfind = '\0';
+	CString szIniPath = tcExePath;
+	szIniPath += "\\";
+	szIniPath += _T("ServerConfig.ini");
+	WritePrivateProfileString(_T("ServerConfig"),_T("IpAddress"),_T("192.168.1.222"),szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("UserName"),_T("ldqbfx"),szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("PassWord"),_T("ldqbfx"),szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("Port"),_T("2121"),szIniPath);
+}
 
 BOOL CFTPClientDlg::OnInitDialog()
 {
@@ -186,7 +211,7 @@ BOOL CFTPClientDlg::OnInitDialog()
 	Thread_Upload_File = CreateThread(NULL,0,Thread_UploadFile,this,0,NULL );//????
 	Thread_Download_File = CreateThread(NULL,0,Thread_DownloadFile,this,0,NULL);//????
 	SetTimer(10,1000,NULL);		//test ,??autodownload and autoupload
-
+	
 	//set default upload/download dir
 	TmpUploadFolderPath = _T("D:\\RadarTaskFile");
 	DownloadFolderPath = _T("FtpAutoDownloadFile");
@@ -211,66 +236,114 @@ BOOL CFTPClientDlg::OnInitDialog()
 
 	//m_pCurl->setHostUserPwd("11","11","localhost",2121);
 	//ConnectFtp(_T("localhost"),_T("11"),_T("11"),_T("2121"));
-	FILE *setFile;
-	setFile = fopen("settingServer.txt","r");
-	char server_ip[20]="\0";
-	char server_name[20]="";
-	char server_passwd[20]="";
-	char server_port[20]="";
-	CString serverIp,serverName,serverPasswd;
-	if (setFile)//??????,???????,???????????
+	//FILE *setFile;
+	//setFile = fopen("settingServer.txt","r");
+	//char server_ip[20]="\0";
+	//char server_name[20]="";
+	//char server_passwd[20]="";
+	//char server_port[20]="";
+	//CString serverIp,serverName,serverPasswd;
+	//if (setFile)//??????,???????,???????????
+	//{
+	//	while(!feof(setFile))
+	//	{
+	//		//fseek(setFile,0,SEEK_SET);
+	//		fgets(server_ip,20,setFile);
+	//		fgets(server_name,15,setFile);
+	//		fgets(server_passwd,15,setFile);
+	//		fgets(server_port,15,setFile);
+	//	}
+	//	deleteEnter(server_ip);
+	//	deleteEnter(server_name);
+	//	deleteEnter(server_passwd);
+
+	//	serverIp.Format(L"%S",server_ip);
+	//	serverName.Format(L"%S",server_name);
+	//	serverPasswd.Format(L"%S",server_passwd);
+
+	//	m_edit_user.SetWindowText(serverName);
+	//	m_edit_pass.SetWindowText(serverPasswd);
+	//	m_edit_port.SetWindowText(_T("2121"));
+	//	m_edit_host.SetWindowText(serverIp);
+	//	m_pCurl->setHostUserPwd(server_name,server_passwd,server_ip,2121);
+	//	ConnectFtp(serverIp,serverName,serverPasswd,_T("2121"));
+	//	fclose(setFile);
+
+	//}
+	//else//????,?????
+	//{
+	//	//host="localhost";
+	//	//host="25.95.234.232";
+	//	//host="192.168.0.204";
+	//	//host = "21.125.125.1";
+	//	host = "192.168.1.222";
+	//	user="yyxc";
+	//	pass="123456";
+	//	port="2121";
+
+	//	m_edit_user.SetWindowText(_T("yyxc"));
+	//	m_edit_pass.SetWindowText(_T("123456"));
+	//	m_edit_port.SetWindowText(_T("2121"));
+	//	m_edit_host.SetWindowText(_T("192.168.1.222"));
+	//	//m_edit_host.SetWindowText(_T("25.95.234.232"));
+	//	//m_edit_host.SetWindowText(_T("localhost"));
+	//	
+	//	//m_pCurl->setHostUserPwd("11","11","25.95.234.232",2121);
+	//	m_pCurl->setHostUserPwd("yyxc","123456","192.168.1.222",2121);
+	//	//ConnectFtp(_T("25.95.234.232"),_T("11"),_T("11"),_T("2121"));
+	//	ConnectFtp(_T("192.168.1.222"),_T("yyxc"),_T("123456"),_T("2121"));
+
+	//}
+	TCHAR lpPath[MAX_PATH];
+	TCHAR ipAddress[16];
+	TCHAR userName[16];
+	TCHAR passWord[16];
+	TCHAR portNum[6];
+	CString szIniPath;
+	::GetModuleFileName(NULL,lpPath,MAX_PATH);
+	TCHAR *pfind = _tcsrchr(lpPath,'\\');
+	if (pfind != NULL)
 	{
-		while(!feof(setFile))
-		{
-			//fseek(setFile,0,SEEK_SET);
-			fgets(server_ip,20,setFile);
-			fgets(server_name,15,setFile);
-			fgets(server_passwd,15,setFile);
-			fgets(server_port,15,setFile);
-		}
-		deleteEnter(server_ip);
-		deleteEnter(server_name);
-		deleteEnter(server_passwd);
-
-		serverIp.Format(L"%S",server_ip);
-		serverName.Format(L"%S",server_name);
-		serverPasswd.Format(L"%S",server_passwd);
-
-		m_edit_user.SetWindowText(serverName);
-		m_edit_pass.SetWindowText(serverPasswd);
-		m_edit_port.SetWindowText(_T("2121"));
-		m_edit_host.SetWindowText(serverIp);
-		m_pCurl->setHostUserPwd(server_name,server_passwd,server_ip,2121);
-		ConnectFtp(serverIp,serverName,serverPasswd,_T("2121"));
-		fclose(setFile);
-
-	}
-	else//????,?????
-	{
-		//host="localhost";
-		//host="25.95.234.232";
-		//host="192.168.0.204";
-		//host = "21.125.125.1";
-		host = "192.168.1.222";
-		user="yyxc";
-		pass="123456";
-		port="2121";
-
-		m_edit_user.SetWindowText(_T("yyxc"));
-		m_edit_pass.SetWindowText(_T("123456"));
-		m_edit_port.SetWindowText(_T("2121"));
-		m_edit_host.SetWindowText(_T("192.168.1.222"));
-		//m_edit_host.SetWindowText(_T("25.95.234.232"));
-		//m_edit_host.SetWindowText(_T("localhost"));
-		
-		//m_pCurl->setHostUserPwd("11","11","25.95.234.232",2121);
-		m_pCurl->setHostUserPwd("yyxc","123456","192.168.1.222",2121);
-		//ConnectFtp(_T("25.95.234.232"),_T("11"),_T("11"),_T("2121"));
-		ConnectFtp(_T("192.168.1.222"),_T("yyxc"),_T("123456"),_T("2121"));
-
+		*pfind = '\0';
+		szIniPath = lpPath;
+		szIniPath += "\\";
+		szIniPath += _T("ServerConfig.ini");
 	}
 	
-	
+	/*::GetCurrentDirectory(MAX_PATH,lpPath);
+	StrCatBuffW(lpPath,_T("\\ServerConfig.ini"),sizeof(lpPath));*/
+	/*strcpy(lpPath,"C:\\FTP\\FTPClient_0514??\\FTPClient\\ServerConfig.ini";*/
+	CFile ConfigFile;
+	if(!ConfigFile.Open(szIniPath,CFile::modeRead,NULL))
+	{
+		/*AfxMessageBox(_T("??ServerConfig.ini??????!"));
+		return false;*/
+		AfxMessageBox(_T("??ServerConfig.ini??????!?????!"));
+		findIniFile();//??iniFile
+		return false;
+	}
+	ConfigFile.Close();
+	GetPrivateProfileString(_T("ServerConfig"),_T("IpAddress"),_T(""),ipAddress,16,szIniPath);
+	GetPrivateProfileString(_T("ServerConfig"),_T("UserName"),_T(""),userName,12,szIniPath);
+	GetPrivateProfileString(_T("ServerConfig"),_T("PassWord"),_T(""),passWord,12,szIniPath);
+	GetPrivateProfileString(_T("ServerConfig"),_T("Port"),_T(""),portNum,6,szIniPath);
+
+	host = ipAddress;
+ 	user = userName;
+	pass = passWord;
+	port = portNum;
+	int portInt = _ttoi(port);
+	m_edit_user.SetWindowText(user);
+	m_edit_pass.SetWindowText(pass);
+	m_edit_port.SetWindowText(port);
+	m_edit_host.SetWindowText(host);
+	char cUserName[12],cPassWord[12],cHost[16];
+	TcharToChar(userName,cUserName);
+	TcharToChar(passWord,cPassWord);
+	TcharToChar(ipAddress,cHost);
+	m_pCurl->setHostUserPwd(cUserName,cPassWord,cHost,portInt);
+	ConnectFtp(host,user,pass,port);
+
 	if(bconnect)
 	{
 		m_list_log.InsertString(0,_T("????"));
@@ -704,8 +777,10 @@ void CFTPClientDlg::OnBnClickedButtonConnetct()
 	if(bconnect)
 	{
 		m_list_log.InsertString(0,_T("????"));
+		m_tree_server.DeleteItem(m_serverRoot);
 		m_serverRoot=m_tree_server.InsertItem(_T("???"));
 		/*m_tree_server.ModifyStyle(NULL,TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_EDITLABELS);  */
+		m_list_server.DeleteAllItems();
 		UpdateDir(m_serverRoot);
 		GetFTPDriveDir(m_serverRoot);
 		AfxMessageBox(_T("????"));
@@ -1088,14 +1163,26 @@ void CFTPClientDlg::OnNMClickTreeServer(NMHDR *pNMHDR, LRESULT *pResult)//??????
 	UINT uFlags;
 
 	HTREEITEM CurrentItem;
+	HTREEITEM SelectItem;
+	HTREEITEM ChildItem;
 	//CString server_path;//?????
 	CurrentItem=m_tree_server.HitTest(point,&uFlags);//?????????ITEM
 	server_path = GetFTPFullPath(CurrentItem);
 
 	m_edit_server.SetWindowText(server_path);
 	m_list_server.DeleteAllItems();
-	UpdateDir(m_serverRoot);
-	GetFTPDriveDir(m_serverRoot);
+	SelectItem = m_tree_server.GetSelectedItem();
+	/*if (m_tree_server.GetSelectedItem() == m_serverRoot)
+	{
+		
+	}*/
+	/*while(m_tree_server.ItemHasChildren(SelectItem))
+		{
+			ChildItem = m_tree_server.GetChildItem(SelectItem);
+			m_tree_server.DeleteItem(ChildItem);
+		}
+	UpdateDir(SelectItem);
+	GetFTPDriveDir(SelectItem);*/
 	*pResult = 0;
 }
 
@@ -1107,8 +1194,8 @@ void CFTPClientDlg::OnTvnSelchangedTreeServer(NMHDR *pNMHDR, LRESULT *pResult)
 	file_num=0;
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;  
 	TVITEM item = pNMTreeView->itemNew;  
-	if(item.hItem == m_serverRoot)  
-		return;  
+	/*if(item.hItem == m_serverRoot)  
+		return;*/  
 	CString str = GetFTPFullPath(item.hItem);  
 	if(str.Right(1) != '\\')  
 		str += '\\';  

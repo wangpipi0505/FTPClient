@@ -41,8 +41,8 @@ void CSettingServer::OnBnClickedOk()
 	// TODO: ?ú′?ìí?ó???tí¨?a′|àí3ìDò′ú??
 	FILE *SettingFile;
 	CString Server_IP,Server_Name,Server_Passwd,Server_Port;
-	
-	SettingFile = fopen("settingServer.txt","w+");
+	TCHAR lpPath[MAX_PATH];
+	TCHAR FPath[MAX_PATH];
 	CWnd *ServerIP = GetDlgItem(IDC_IPADDRESS_SERVER);
 	CWnd *ServerName = GetDlgItem(IDC_EDIT_USERNAME); 
 	CWnd *ServerPasswd = GetDlgItem(IDC_EDIT_PASSWD); 
@@ -53,36 +53,34 @@ void CSettingServer::OnBnClickedOk()
 	ServerName->GetWindowText(Server_Name);
 	ServerPasswd->GetWindowText(Server_Passwd);
 	ServerPort->GetWindowText(Server_Port);
-	DWORD dwNum_server_ip = WideCharToMultiByte(CP_OEMCP,NULL,Server_IP,-1,NULL,NULL,0,NULL);
-	char *server_ip_after = new char[dwNum_server_ip];
-	WideCharToMultiByte(CP_OEMCP,NULL,Server_IP,-1,server_ip_after,dwNum_server_ip,0,NULL);
-	//sprintf(server_ip_after,"%s\n",server_ip_after);
-	//fprintf(SettingFile,"\n");
-	fwrite(server_ip_after,strlen(server_ip_after),1,SettingFile);
-
-	DWORD dwNum_server_name = WideCharToMultiByte(CP_OEMCP,NULL,Server_Name,-1,NULL,NULL,0,NULL);
-	char *server_name_after = new char[dwNum_server_name];
-	WideCharToMultiByte(CP_OEMCP,NULL,Server_Name,-1,server_name_after,dwNum_server_name,0,NULL);
-	//sprintf(server_name_after,"%s\n",server_name_after);
-	fprintf(SettingFile,"\n");
-	fwrite(server_name_after,sizeof(server_name_after),1,SettingFile);
-
-	DWORD dwNum_server_pass = WideCharToMultiByte(CP_OEMCP,NULL,Server_Passwd,-1,NULL,NULL,0,NULL);
-	char *server_pass_after = new char[dwNum_server_pass];
-	WideCharToMultiByte(CP_OEMCP,NULL,Server_Passwd,-1,server_pass_after,dwNum_server_pass,0,NULL);
-	//sprintf(server_pass_after,"%s\n",server_pass_after);
-	fprintf(SettingFile,"\n");
-	fwrite(server_pass_after,sizeof(server_pass_after),1,SettingFile);
 	
-	DWORD dwNum_server_port = WideCharToMultiByte(CP_OEMCP,NULL,Server_Port,-1,NULL,NULL,0,NULL);
-	char *server_port_after = new char[dwNum_server_port];
-	WideCharToMultiByte(CP_OEMCP,NULL,Server_Port,-1,server_port_after,dwNum_server_port,0,NULL);
-	//sprintf(server_port_after,"%s\n",server_port_after);
-	fprintf(SettingFile,"\n");
-	fwrite(server_port_after,sizeof(server_port_after),1,SettingFile);
-
-	//fwrite("test",5,1,SettingFile);
-	fclose(SettingFile);
+	/*::GetCurrentDirectory(MAX_PATH,lpPath);
+	StrCatBuffW(lpPath,_T("\\ServerConfig.ini"),sizeof(lpPath));*/
+	CString szIniPath;
+	::GetModuleFileName(NULL,lpPath,MAX_PATH);
+	TCHAR *pfind = _tcsrchr(lpPath,'\\');
+	if (pfind != NULL)
+	{
+		*pfind = '\0';
+		szIniPath = lpPath;
+		szIniPath += "\\";
+		szIniPath += _T("ServerConfig.ini");
+	}
+	/*::GetCurrentDirectory(MAX_PATH,FPath);
+	StrCatBuffW(FPath,_T("\\ServerConfig.ini"),sizeof(FPath));*/
+	/*strcpy(lpPath,"C:\\FTP\\FTPClient_0514济南\\FTPClient\\ServerConfig.ini";*/
+	CFile ConfigFile;
+	if(!ConfigFile.Open(szIniPath,CFile::modeRead,NULL))
+	{
+		AfxMessageBox(_T("打开ServerConfig.ini配置文件失败！"));
+		return;
+	}
+	ConfigFile.Close();
+	WritePrivateProfileString(_T("ServerConfig"),_T("IpAddress"),Server_IP,szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("UserName"),Server_Name,szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("PassWord"),Server_Passwd,szIniPath);
+	WritePrivateProfileString(_T("ServerConfig"),_T("Port"),Server_Port,szIniPath);
+	
 	CDialogEx::OnOK();
 }
 
@@ -91,7 +89,7 @@ void CSettingServer::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
-	// TODO: ?ú′?′|ìí?ó???￠′|àí3ìDò′ú??
+	// TODO: 在此处添加消息处理程序代码
 	 /* CWnd* pWnd=GetDlgItem(IDC_STATIC_CONNECT);
 	if(pWnd->GetSafeHwnd())   
 		pWnd->MoveWindow(0.01*cx,0.01*cy,(int)(cx*0.98),cy*0.09);*/
